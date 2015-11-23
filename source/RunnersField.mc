@@ -10,6 +10,9 @@ class RunnersField extends App.AppBase {
         var view = new RunnersView();
         return [ view ];
     }
+
+    function onSettingsChanged() {
+   	}
 }
 
 //! A DataField that shows some infos.
@@ -35,10 +38,16 @@ class RunnersView extends Ui.DataField {
     hidden var batteryColor1 = Graphics.COLOR_GREEN;
     hidden var hrColor = Graphics.COLOR_RED;
     hidden var headerColor = Graphics.COLOR_DK_GRAY;
+    hidden var paceSlowColor = Graphics.COLOR_RED;
         
     hidden var paceStr, avgPaceStr, hrStr, distanceStr, durationStr;
     
-    hidden var paceData = new DataQueue(10);
+    hidden var paceAvgLen = Application.getApp().getProperty("paceAveraging");
+    hidden var paceData = new DataQueue(paceAvgLen);
+    
+    hidden var paceAvgLongLen = Application.getApp().getProperty("paceAveragingLong");
+    hidden var paceDataOneMinute = new DataQueue(paceAvgLongLen);
+
     hidden var avgSpeed= 0;
     hidden var hr = 0;
     hidden var distance = 0;
@@ -53,10 +62,18 @@ class RunnersView extends Ui.DataField {
 
     //! The given info object contains all the current workout
     function compute(info) {
+
+    	if (paceAvgLen != Application.getApp().getProperty("paceAveraging")) {
+    	    paceAvgLen = Application.getApp().getProperty("paceAveraging");
+    		paceData = new DataQueue(paceAvgLen);
+    	}
+
         if (info.currentSpeed != null) {
             paceData.add(info.currentSpeed);
+            paceDataOneMinute.add(info.currentSpeed);
         } else {
             paceData.reset();
+            paceDataOneMinute.reset();
         }
         
         avgSpeed = info.averageSpeed != null ? info.averageSpeed : 0;
@@ -107,6 +124,7 @@ class RunnersView extends Ui.DataField {
             hrColor = (backgroundColor == Graphics.COLOR_BLACK) ? Graphics.COLOR_BLUE : Graphics.COLOR_RED;
             headerColor = (backgroundColor == Graphics.COLOR_BLACK) ? Graphics.COLOR_LT_GRAY: Graphics.COLOR_DK_GRAY;
             batteryColor1 = (backgroundColor == Graphics.COLOR_BLACK) ? Graphics.COLOR_BLUE : Graphics.COLOR_DK_GREEN;
+            paceSlowColor = (backgroundColor == Graphics.COLOR_BLACK) ? Graphics.COLOR_RED : Graphics.COLOR_RED;
         }
     }
         
@@ -128,7 +146,14 @@ class RunnersView extends Ui.DataField {
         dc.drawText(148, 15, HEADER_FONT, ampm, CENTER);
         
         //pace
-        dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
+		var paceColor = textColor;
+		var oneMinuteAvgSpeed = compureAverageOneMinuteSpeed();
+		var avgSpeed = computeAverageSpeed();
+		
+		if (avgSpeed < oneMinuteAvgSpeed) {
+			paceColor = paceSlowColor;
+		} 
+        dc.setColor(paceColor, Graphics.COLOR_TRANSPARENT);
         dc.drawText(50, 70, VALUE_FONT, getMinutesPerKmOrMile(computeAverageSpeed()), CENTER);
         
         //hr
@@ -263,6 +288,22 @@ class RunnersView extends Ui.DataField {
         return 0.0;
     }
     
+    function compureAverageOneMinuteSpeed() {
+        var size = 0;
+        var data = paceDataOneMinute.getData();
+        var sumOfData = 0.0;
+        for (var i = 0; i < data.size(); i++) {
+            if (data[i] != null) {
+                sumOfData = sumOfData + data[i];
+                size++;
+            }
+        }
+        if (sumOfData > 0) {
+            return sumOfData / size;
+        }
+        return 0.0;
+    }
+
     function computeHour(hour) {
         if (hour < 1) {
             return hour + 12;

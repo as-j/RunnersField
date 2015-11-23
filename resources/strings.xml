@@ -5,4 +5,6 @@
     <string id="hr">HR</string>
     <string id="distance">DIST</string>
     <string id="duration">DURATION</string>
+    <string id="paceAveragingTitle">Pace Avg Time (s)</string>
+    <string id="paceAveragingLongTitle">Long term Pace Avg Time (s)</string>
 </resources>
