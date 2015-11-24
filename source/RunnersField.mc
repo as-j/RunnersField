@@ -29,10 +29,12 @@ class RunnersView extends Ui.DataField {
     hidden const CENTER = Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER;
     hidden const HEADER_FONT = Graphics.FONT_XTINY;
     hidden const VALUE_FONT = Graphics.FONT_NUMBER_MEDIUM;
+    hidden const VALUE_SMALL_FONT = Graphics.FONT_NUMBER_MILD;
     hidden const ZERO_TIME = "0:00";
     hidden const ZERO_DISTANCE = "0.00";
     
     hidden var kmOrMileInMeters = 1000;
+    hidden var mOrFeet = 1;
     hidden var is24Hour = true;
     hidden var distanceUnits = System.UNIT_METRIC;
     hidden var textColor = Graphics.COLOR_BLACK;
@@ -59,6 +61,7 @@ class RunnersView extends Ui.DataField {
     hidden var distance = 0;
     hidden var elapsedTime = 0;
     hidden var gpsSignal = 0;
+    hidden var altitude = 0;
     
     hidden var hasBackgroundColorOption = false;
     
@@ -86,6 +89,7 @@ class RunnersView extends Ui.DataField {
         hr = info.currentHeartRate != null ? info.currentHeartRate : 0;
         distance = info.elapsedDistance != null ? info.elapsedDistance : 0;
         gpsSignal = info.currentLocationAccuracy;
+        altitude = info.altitude != null ? info.altitude : 0;
     }
     
     function onLayout(dc) {
@@ -108,8 +112,10 @@ class RunnersView extends Ui.DataField {
         distanceUnits = System.getDeviceSettings().distanceUnits;
         if (distanceUnits == System.UNIT_METRIC) {
             kmOrMileInMeters = 1000;
+            mOrFeet = 1;
         } else {
             kmOrMileInMeters = 1610;
+            mOrFeet = 3.281;
         }
         is24Hour = System.getDeviceSettings().is24Hour;
         
@@ -165,13 +171,22 @@ class RunnersView extends Ui.DataField {
         dc.setColor(hrColor, Graphics.COLOR_TRANSPARENT);
         dc.drawText(109, 70, VALUE_FONT, hr.format("%d"), CENTER);
         
+        // altitude
+        dc.setColor(Graphics.COLOR_DK_GREEN, Graphics.COLOR_TRANSPARENT);
+        if (altitude > 99) {
+        	dc.drawText(109, 130, VALUE_SMALL_FONT, (mOrFeet*altitude).format("%.1f"), CENTER);
+        }
+        else {
+        	dc.drawText(112, 130, VALUE_FONT, (mOrFeet*altitude).format("%2.1f"), CENTER);
+		}        
+        
         //apace
 		paceColor = textColor;
 		if (oneMinuteAvgSpeed < avgSpeed) {
 			paceColor = paceSlowColor;
 		}
         dc.setColor(paceColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(57, 130, VALUE_FONT, getMinutesPerKmOrMile(avgSpeed), CENTER);
+        dc.drawText(50, 130, VALUE_FONT, getMinutesPerKmOrMile(avgSpeed), CENTER);
         
         //distance
         var distStr;
@@ -208,7 +223,7 @@ class RunnersView extends Ui.DataField {
         } else {
             duration = ZERO_TIME;
         } 
-        dc.drawText(158, 130, VALUE_FONT, duration, CENTER);
+        dc.drawText(170, 130, VALUE_FONT, duration, CENTER);
         
         //signs background
         dc.setColor(inverseBackgroundColor, inverseBackgroundColor);
