@@ -5,13 +5,19 @@ using Toybox.System as System;
 
 //! @author Konrad Paumann
 class RunnersField extends App.AppBase {
+	var view;
+	
+    function initialize() {
+    	AppBase.initialize();
+    }
 
     function getInitialView() {
-        var view = new RunnersView();
+        view = new RunnersView();
         return [ view ];
     }
 
     function onSettingsChanged() {
+    	view.updateSettings();
    	}
 }
 
@@ -66,16 +72,6 @@ class RunnersView extends Ui.DataField {
 
     //! The given info object contains all the current workout
     function compute(info) {
-
-    	if (paceAvgLen != Application.getApp().getProperty("paceAveraging")) {
-    	    paceAvgLen = Application.getApp().getProperty("paceAveraging");
-    		paceData = new DataQueue(paceAvgLen);
-    	}
-
-    	if (paceAvgLongLen != Application.getApp().getProperty("paceAveragingLong")) {
-    	    paceAvgLongLen = Application.getApp().getProperty("paceAveragingLong");
-    		paceDateOneMinute = new DataQueue(paceAvgLongLen);
-    	}
 
         if (info.currentSpeed != null) {
             paceData.add(info.currentSpeed);
@@ -346,6 +342,14 @@ class RunnersView extends Ui.DataField {
             return minutesPerKmOrMilesDecimal.format("%2d") + ":" + seconds.format("%02d");
         }
         return ZERO_TIME;
+    }
+    
+    function updateSettings() {
+		paceAvgLen = Application.getApp().getProperty("paceAveraging");
+		paceData = new DataQueue(paceAvgLen);
+
+		paceAvgLongLen = Application.getApp().getProperty("paceAveragingLong");
+    	paceDateOneMinute = new DataQueue(paceAvgLongLen);   	
     }
 }
 
