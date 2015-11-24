@@ -58,6 +58,10 @@ class RunnersView extends Ui.DataField {
     
     function initialize() {
         DataField.initialize();
+        if (paceAvgLen == null ||
+        	paceAvgLen == 0) {
+        	paceAvgLen = 10;
+        }
     }
 
     //! The given info object contains all the current workout
@@ -66,6 +70,11 @@ class RunnersView extends Ui.DataField {
     	if (paceAvgLen != Application.getApp().getProperty("paceAveraging")) {
     	    paceAvgLen = Application.getApp().getProperty("paceAveraging");
     		paceData = new DataQueue(paceAvgLen);
+    	}
+
+    	if (paceAvgLongLen != Application.getApp().getProperty("paceAveragingLong")) {
+    	    paceAvgLongLen = Application.getApp().getProperty("paceAveragingLong");
+    		paceDateOneMinute = new DataQueue(paceAvgLongLen);
     	}
 
         if (info.currentSpeed != null) {
@@ -77,7 +86,7 @@ class RunnersView extends Ui.DataField {
         }
         
         avgSpeed = info.averageSpeed != null ? info.averageSpeed : 0;
-        elapsedTime = info.elapsedTime != null ? info.elapsedTime : 0;        
+        elapsedTime = info.elapsedTime != null ? info.elapsedTime : 0;
         hr = info.currentHeartRate != null ? info.currentHeartRate : 0;
         distance = info.elapsedDistance != null ? info.elapsedDistance : 0;
         gpsSignal = info.currentLocationAccuracy;
@@ -148,20 +157,24 @@ class RunnersView extends Ui.DataField {
         //pace
 		var paceColor = textColor;
 		var oneMinuteAvgSpeed = compureAverageOneMinuteSpeed();
-		var avgSpeed = computeAverageSpeed();
+		var shortAvgSpeed = computeAverageSpeed();
 		
-		if (avgSpeed < oneMinuteAvgSpeed) {
+		if (shortAvgSpeed < oneMinuteAvgSpeed) {
 			paceColor = paceSlowColor;
 		} 
         dc.setColor(paceColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(50, 70, VALUE_FONT, getMinutesPerKmOrMile(computeAverageSpeed()), CENTER);
+        dc.drawText(50, 70, VALUE_FONT, getMinutesPerKmOrMile(shortAvgSpeed), CENTER);
         
         //hr
         dc.setColor(hrColor, Graphics.COLOR_TRANSPARENT);
         dc.drawText(109, 70, VALUE_FONT, hr.format("%d"), CENTER);
         
         //apace
-        dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
+		paceColor = textColor;
+		if (oneMinuteAvgSpeed < avgSpeed) {
+			paceColor = paceSlowColor;
+		}
+        dc.setColor(paceColor, Graphics.COLOR_TRANSPARENT);
         dc.drawText(57, 130, VALUE_FONT, getMinutesPerKmOrMile(avgSpeed), CENTER);
         
         //distance
@@ -176,6 +189,7 @@ class RunnersView extends Ui.DataField {
         } else {
             distStr = ZERO_DISTANCE;
         }
+        dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
         dc.drawText(170 , 70, VALUE_FONT, distStr, CENTER);
         
         //duration
