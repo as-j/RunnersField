@@ -94,7 +94,7 @@ class RunnersView extends Ui.DataField {
     
     function onLayout(dc) {
         setDeviceSettingsDependentVariables();
-        onUpdate(dc);
+        //onUpdate(dc);
     }
     
     function onUpdate(dc) {
