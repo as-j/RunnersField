@@ -63,6 +63,8 @@ class RunnersView extends Ui.DataField {
     hidden var elapsedTime = 0;
     hidden var gpsSignal = 0;
     hidden var altitude = 0;
+	hidden var maxHeartRate = 0;
+	hidden var averageHeartRate = 0;
     
     hidden var hasBackgroundColorOption = false;
     
@@ -93,6 +95,8 @@ class RunnersView extends Ui.DataField {
         distance = info.elapsedDistance != null ? info.elapsedDistance : 0;
         gpsSignal = info.currentLocationAccuracy;
         altitude = info.altitude != null ? info.altitude : 0;
+		maxHeartRate = info.maxHeartRate != null ? info.maxHeartRate : 0;
+		averageHeartRate = info.averageHeartRate != null ? info.averageHeartRate : 0;
     }
     
     function onLayout(dc) {
@@ -184,8 +188,18 @@ class RunnersView extends Ui.DataField {
         dc.drawText(50, 70, VALUE_FONT, getMinutesPerKmOrMile(shortAvgSpeed), CENTER);
         
         //hr
-        dc.setColor(hrColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(109, 70, VALUE_FONT, hr.format("%d"), CENTER);
+        //dc.setColor(hrColor, Graphics.COLOR_TRANSPARENT);
+        //dc.drawText(109, 70, VALUE_FONT, hr.format("%d"), CENTER);
+        
+        drawHRZone(dc, hr, 000, 122, Graphics.COLOR_LT_GRAY);
+        drawHRZone(dc, hr, 122, 134, Graphics.COLOR_BLUE);
+        drawHRZone(dc, hr, 134, 149, Graphics.COLOR_GREEN);
+        drawHRZone(dc, hr, 149, 163, Graphics.COLOR_ORANGE);
+        drawHRZone(dc, hr, 163, 250, Graphics.COLOR_RED);
+        
+        drawHRZone(dc, hr, maxHeartRate-0.5, maxHeartRate+0.5, Graphics.COLOR_WHITE);
+        drawHRZone(dc, hr, averageHeartRate-0.5, averageHeartRate+0.5, Graphics.COLOR_DK_RED);
+        drawHRZone(dc, hr, hr-0.5, hr+0.5, Graphics.COLOR_BLACK);
         
         // altitude
         dc.setColor(Graphics.COLOR_DK_GREEN, Graphics.COLOR_TRANSPARENT);
@@ -264,15 +278,43 @@ class RunnersView extends Ui.DataField {
         
         // headers:
         dc.setColor(headerColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(50, 38, HEADER_FONT, paceStr, CENTER);
         dc.drawText(57, 165, HEADER_FONT, avgPaceStr, CENTER);
-        dc.drawText(109, 38, HEADER_FONT, hrStr, CENTER); 
-        dc.drawText(170, 38, HEADER_FONT, distanceStr, CENTER);
         dc.drawText(158, 165, HEADER_FONT, durationStr, CENTER);
+        dc.drawText(109, 43, HEADER_FONT, "APACE", CENTER);
+        //dc.drawText(109, 38, HEADER_FONT, hrStr, CENTER); 
+        dc.drawText(170, 43, HEADER_FONT, distanceStr, CENTER);
         
         //grid
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawLine(0, 104, dc.getWidth(), 104);
+    function drawHRZone(dc, hr, hrBot, hrTop, color) {
+    	var pixelPerBeat = 5;
+    	var middle = dc.getWidth()/2;
+    	
+    	var x = middle-(hr-hrBot)*pixelPerBeat;
+    	var x2 = middle-(hr-hrTop)*pixelPerBeat;
+    	var y = 25;
+    	var height = 12;
+    	var width = x2-x;
+    	
+    	dc.setColor(color, Graphics.COLOR_TRANSPARENT);
+   		dc.fillRectangle(x,y,width,height);
+    }
+    
+    function drawCadenceZone(dc, cadence, cadenceBot, cadenceTop, color) {
+    	var pixelPerCadence = 5;
+    	var middle = dc.getWidth()/2;
+    	
+    	var x = middle-(cadence-cadenceBot)*pixelPerCadence;
+    	var x2 = middle-(cadence-cadenceTop)*pixelPerCadence;
+    	
+    	var height = 12;
+    	var y = 180-height;
+
+    	var width = x2-x;
+    	
+    	dc.setColor(color, Graphics.COLOR_TRANSPARENT);
+   		dc.fillRectangle(x,y,width,height);
     }
     
     function drawBattery(battery, dc, xStart, yStart, width, height) {                
