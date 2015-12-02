@@ -51,10 +51,10 @@ class RunnersView extends Ui.DataField {
     hidden var paceStr, avgPaceStr, hrStr, distanceStr, durationStr;
     
     hidden var paceAvgLen = Application.getApp().getProperty("paceAveraging");
-    hidden var paceData = new DataQueue(paceAvgLen);
+    hidden var paceData;
     
     hidden var paceAvgLongLen = Application.getApp().getProperty("paceAveragingLong");
-    hidden var paceDataOneMinute = new DataQueue(paceAvgLongLen);
+    hidden var paceDataOneMinute;
 	hidden var doUpdates = 0;
 
     hidden var avgSpeed= 0;
@@ -68,6 +68,8 @@ class RunnersView extends Ui.DataField {
     
     function initialize() {
         DataField.initialize();
+     	paceData = DataQueueInit(paceAvgLen);
+     	paceDataOneMinute = DataQueueInit(paceAvgLongLen);
         if (paceAvgLen == null ||
         	paceAvgLen == 0) {
         	paceAvgLen = 10;
@@ -78,11 +80,11 @@ class RunnersView extends Ui.DataField {
     function compute(info) {
 
         if (info.currentSpeed != null) {
-            paceData.add(info.currentSpeed);
-            paceDataOneMinute.add(info.currentSpeed);
+            DataQueueAdd(paceData, info.currentSpeed);
+            DataQueueAdd(paceDataOneMinute, info.currentSpeed);
         } else {
-            paceData.reset();
-            paceDataOneMinute.reset();
+            DataQueueReset(paceData);
+            DataQueueReset(paceDataOneMinute);
         }
         
         avgSpeed = info.averageSpeed != null ? info.averageSpeed : 0;
@@ -172,8 +174,8 @@ class RunnersView extends Ui.DataField {
         
         //pace
 		var paceColor = textColor;
-		var oneMinuteAvgSpeed = compureAverageOneMinuteSpeed();
-		var shortAvgSpeed = computeAverageSpeed();
+		var oneMinuteAvgSpeed = computeAverageSpeed(paceDataOneMinute);
+		var shortAvgSpeed = computeAverageSpeed(paceData);
 		
 		if (shortAvgSpeed < oneMinuteAvgSpeed) {
 			paceColor = paceSlowColor;
@@ -310,26 +312,11 @@ class RunnersView extends Ui.DataField {
         dc.setColor(color3, Graphics.COLOR_TRANSPARENT);
         dc.fillRectangle(xStart + 14, yStart + 4, 6, 16);
     }
-    
-    function computeAverageSpeed() {
+  
+    function computeAverageSpeed(paceData) { 
+       	//System.println("-->computeAverageSpeed");
         var size = 0;
-        var data = paceData.getData();
-        var sumOfData = 0.0;
-        for (var i = 0; i < data.size(); i++) {
-            if (data[i] != null) {
-                sumOfData = sumOfData + data[i];
-                size++;
-            }
-        }
-        if (sumOfData > 0) {
-            return sumOfData / size;
-        }
-        return 0.0;
-    }
-    
-    function compureAverageOneMinuteSpeed() {
-        var size = 0;
-        var data = paceDataOneMinute.getData();
+        var data = DataQueueGetData(paceData);
         var sumOfData = 0.0;
         for (var i = 0; i < data.size(); i++) {
             if (data[i] != null) {
@@ -380,39 +367,37 @@ class RunnersView extends Ui.DataField {
 		paceAvgLongLen = Application.getApp().getProperty("paceAveragingLong");
     	paceDateOneMinute = new DataQueue(paceAvgLongLen);   	
     }
-}
-
+     
+    
+    
 //! A circular queue implementation.
 //! @author Konrad Paumann
-class DataQueue {
-
-    //! the data array.
-    hidden var data;
-    hidden var maxSize = 0;
-    hidden var pos = 0;
+    
+}
 
     //! precondition: size has to be >= 2
-    function initialize(arraySize) {
-        data = new[arraySize];
-        maxSize = arraySize;
+    function DataQueueInit(arraySize) {
+    	var obj = [ new[arraySize],   // data 0
+    			  arraySize,          // size 1
+    			  0 ];                // pos  2
+       	return obj;
     }
     
     //! Add an element to the queue.
-    function add(element) {
-        data[pos] = element;
-        pos = (pos + 1) % maxSize;
+    function DataQueueAdd(obj, element) {
+        obj[0][obj[2]] = element;
+        obj[2] = (obj[2] + 1) % obj[1];
     }
     
     //! Reset the queue to its initial state.
-    function reset() {
-        for (var i = 0; i < data.size(); i++) {
-            data[i] = null;
+    function DataQueueReset(obj) {
+        for (var i = 0; i < obj[0].size(); i++) {
+            obj[0][i] = null;
         }
-        pos = 0;
+        obj[2] = 0;
     }
     
     //! Get the underlying data array.
-    function getData() {
-        return data;
+    function DataQueueGetData(obj) {
+        return obj[0];
     }
-}
