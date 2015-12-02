@@ -55,6 +55,7 @@ class RunnersView extends Ui.DataField {
     
     hidden var paceAvgLongLen = Application.getApp().getProperty("paceAveragingLong");
     hidden var paceDataOneMinute;
+	hidden var doneLayout = 0;
 	hidden var doUpdates = 0;
 
     hidden var avgSpeed= 0;
@@ -100,7 +101,12 @@ class RunnersView extends Ui.DataField {
     }
     
     function onLayout(dc) {
-        setDeviceSettingsDependentVariables();
+		if (doneLayout == 1) {
+			return;
+		}
+			
+		doneLayout = 1;
+    	setDeviceSettingsDependentVariables();
         //onUpdate(dc);
     }
     
