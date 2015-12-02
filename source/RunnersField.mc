@@ -99,7 +99,7 @@ class RunnersView extends Ui.DataField {
         hr = info.currentHeartRate != null ? info.currentHeartRate : 0;
         distance = info.elapsedDistance != null ? info.elapsedDistance : 0;
         gpsSignal = info.currentLocationAccuracy;
-        altitude = info.altitude != null ? info.altitude : 0;
+        altitude = info.totalAscent != null ? info.totalAscent : 0;
 		maxHeartRate = info.maxHeartRate != null ? info.maxHeartRate : 0;
 		averageHeartRate = info.averageHeartRate != null ? info.averageHeartRate : 0;
 		maxCadence = info.maxCadence != null ? info.maxCadence : 0;
@@ -225,20 +225,22 @@ class RunnersView extends Ui.DataField {
            
         // altitude
         dc.setColor(Graphics.COLOR_DK_GREEN, Graphics.COLOR_TRANSPARENT);
-        if (altitude > 99) {
-        	dc.drawText(109, 130, VALUE_SMALL_FONT, (mOrFeet*altitude).format("%.1f"), CENTER);
-        }
-        else {
-        	dc.drawText(112, 130, VALUE_FONT, (mOrFeet*altitude).format("%2.1f"), CENTER);
-		}        
-        
+        //dc.drawText(112, 130, VALUE_FONT, (mOrFeet*altitude).format("%2.1f"), CENTER);   
+		var ascent = (mOrFeet*altitude); 
+		if (ascent > 99.9) {
+        	dc.drawText(109, 130, VALUE_FONT, ascent.format("%d"), CENTER);
+       	} else {
+       		dc.drawText(109, 130, VALUE_FONT, ascent.format("%2.1f"), CENTER);
+       	}
+        dc.drawText(109,  70, VALUE_FONT, getMinutesPerKmOrMile(oneMinuteAvgSpeed), CENTER);
+                
         //apace
 		paceColor = textColor;
 		if (oneMinuteAvgSpeed < avgSpeed) {
 			paceColor = paceSlowColor;
 		}
         dc.setColor(paceColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(50, 130, VALUE_FONT, getMinutesPerKmOrMile(avgSpeed), CENTER);
+        dc.drawText(46, 130, VALUE_FONT, getMinutesPerKmOrMile(avgSpeed), CENTER);
         
         //distance
         var distStr;
