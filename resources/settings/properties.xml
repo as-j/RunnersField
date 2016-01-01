@@ -1,4 +1,5 @@
 <properties>
     <property id="paceAveraging" type="number">1</property>
     <property id="paceAveragingLong" type="number">180</property>
+    <property id="hrZones" type="string">120,132,148,162,178</property>
 </properties>
