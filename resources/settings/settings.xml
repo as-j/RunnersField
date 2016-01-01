@@ -1,0 +1,5 @@
+<settings>
+    <setting propertyKey="@Properties.hrZones" title="@Strings.hrZoneTitle">
+        <settingConfig type="alphaNumeric" required="true" />
+    </setting>
+</settings>

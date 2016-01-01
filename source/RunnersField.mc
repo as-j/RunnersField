@@ -53,11 +53,38 @@ class RunnersView extends Ui.DataField {
 	hidden var currentCadence = 0;
 	hidden var averageCadence = 0;
 	hidden var maxCadence = 0;
+	
+	hidden var hrZones = [ 122,134,149,163,182 ];
     
     hidden var hasBackgroundColorOption = false;
     
     function initialize() {
         DataField.initialize();
+        var str = Application.getApp().getProperty("hrZones");
+        var loc = str.find(",");
+        var zones = [ 0, 0, 0, 0 ];
+        var i = 0;
+        try {
+        	for(i = 0; i <= 3; i++) {
+        		loc = str.find(",");
+        		if (loc == null) {
+        			loc = str.length();
+        		}
+        		var substr = str.substring(0, loc);
+        		if (substr.length() < 2) {
+        			throw new Exception();
+        		}
+        		zones[i] = substr.toNumber();
+        		str = str.substring(loc+1, str.length());
+        	}
+        }
+        catch (ex) {
+        }
+        finally {
+        	if (i >= 4) {
+        		hrZones = zones;
+        	}
+        }
     }
 
     //! The given info object contains all the current workout
@@ -156,11 +183,10 @@ class RunnersView extends Ui.DataField {
         
         //pace
         dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(50, 70, VALUE_FONT, getMinutesPerKmOrMile(computeAverageSpeed()), CENTER);
+        dc.drawText(57, 70, VALUE_FONT, getMinutesPerKmOrMile(computeAverageSpeed()), CENTER);
         
         //hr
         dc.setColor(hrColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(109, 70, VALUE_FONT, hr.format("%d"), CENTER);
         //dc.setColor(hrColor, Graphics.COLOR_TRANSPARENT);
         //dc.drawText(109, 70, VALUE_FONT, hr.format("%d"), CENTER);
                 
@@ -176,11 +202,11 @@ class RunnersView extends Ui.DataField {
         //dc.setColor(hrColor, Graphics.COLOR_TRANSPARENT);
         //dc.drawText(109, 70, VALUE_FONT, hr.format("%d"), CENTER);
         
-        drawHRZone(dc, hr, 000, 122, Graphics.COLOR_LT_GRAY);
-        drawHRZone(dc, hr, 122, 134, Graphics.COLOR_BLUE);
-        drawHRZone(dc, hr, 134, 149, Graphics.COLOR_GREEN);
-        drawHRZone(dc, hr, 149, 163, Graphics.COLOR_ORANGE);
-        drawHRZone(dc, hr, 163, 250, Graphics.COLOR_RED);
+        drawHRZone(dc, hr, 000, hrZones[0], Graphics.COLOR_LT_GRAY);
+        drawHRZone(dc, hr, hrZones[0], hrZones[1], Graphics.COLOR_BLUE);
+        drawHRZone(dc, hr, hrZones[1], hrZones[2], Graphics.COLOR_GREEN);
+        drawHRZone(dc, hr, hrZones[2], hrZones[3], Graphics.COLOR_ORANGE);
+        drawHRZone(dc, hr, hrZones[3], 250, Graphics.COLOR_RED);
         
         drawHRZone(dc, hr, maxHeartRate-0.5, maxHeartRate+0.5, Graphics.COLOR_WHITE);
         drawHRZone(dc, hr, averageHeartRate-0.5, averageHeartRate+0.5, Graphics.COLOR_DK_RED);
@@ -250,10 +276,10 @@ class RunnersView extends Ui.DataField {
         
         // headers:
         dc.setColor(headerColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(50, 38, HEADER_FONT, paceStr, CENTER);
-        dc.drawText(57, 165, HEADER_FONT, avgPaceStr, CENTER);
-        dc.drawText(158, 165, HEADER_FONT, durationStr, CENTER);
+        dc.drawText(50, 43, HEADER_FONT, paceStr, CENTER);
         dc.drawText(170, 43, HEADER_FONT, distanceStr, CENTER);
+        dc.drawText(50, 160, HEADER_FONT, avgPaceStr, CENTER);
+        dc.drawText(170, 160, HEADER_FONT, durationStr, CENTER);
         
         //grid
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
