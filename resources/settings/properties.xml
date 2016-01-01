@@ -1,4 +1,4 @@
 <properties>
-    <property id="paceAveraging" type="number">10</property>
-    <property id="paceAveragingLong" type="number">60</property>
+    <property id="paceAveraging" type="number">1</property>
+    <property id="paceAveragingLong" type="number">180</property>
 </properties>

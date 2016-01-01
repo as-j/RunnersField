@@ -7,10 +7,10 @@ using Toybox.System as System;
 class RunnersField extends App.AppBase {
 	var view;
 	
-    function initialize() {
-    	AppBase.initialize();
-    }
-
+	function initialize() {
+		return App.AppBase.initialize();
+	}
+	
     function getInitialView() {
         view = new RunnersView();
         return [ view ];
@@ -50,11 +50,15 @@ class RunnersView extends Ui.DataField {
         
     hidden var paceStr, avgPaceStr, hrStr, distanceStr, durationStr;
     
-    hidden var paceAvgLen = Application.getApp().getProperty("paceAveraging");
+    hidden var paceAvgLen = 1; //Application.getApp().getProperty("paceAveraging");
     hidden var paceData;
     
-    hidden var paceAvgLongLen = Application.getApp().getProperty("paceAveragingLong");
-    hidden var paceDataOneMinute;
+    hidden var paceDataLongAverageLen = 5; //(Application.getApp().getProperty("paceAveragingLong")/30).toNumber();
+    hidden var paceDataLongAverage = new [paceDataLongAverageLen];
+    hidden var paceDataLongLastTime = -30000; 
+    hidden var paceDataLongPos = 0;
+	//hidden var longAvg = new[Application.getApp().getProperty("paceAveragingLong")];
+
 	hidden var doneLayout = 0;
 	hidden var doUpdates = 0;
 
@@ -66,6 +70,7 @@ class RunnersView extends Ui.DataField {
     hidden var altitude = 0;
 	hidden var maxHeartRate = 0;
 	hidden var averageHeartRate = 0;
+	hidden var lastTime = 0;
 	
 	hidden var currentCadence = 0;
 	hidden var averageCadence = 0;
@@ -74,28 +79,54 @@ class RunnersView extends Ui.DataField {
     hidden var hasBackgroundColorOption = false;
     
     function initialize() {
-        DataField.initialize();
      	paceData = DataQueueInit(paceAvgLen);
-     	paceDataOneMinute = DataQueueInit(paceAvgLongLen);
+        System.println("-->dataField: " + System.getSystemStats().usedMemory);
+        
+        paceDataLongAverageLen = 5; //(Application.getApp().getProperty("paceAveragingLong")/30).toNumber();
+    	paceDataLongAverage = new [paceDataLongAverageLen];
+        
         if (paceAvgLen == null ||
         	paceAvgLen == 0) {
         	paceAvgLen = 10;
         }
+        DataField.initialize(); 
     }
 
     //! The given info object contains all the current workout
     function compute(info) {
-
+		//System.println("-->compute(" + System.getSystemStats().usedMemory + ") " + 
+		//info.timerTime + " elapse " + info.elapsedTime + " eD " + info.elapsedDistance );
         if (info.currentSpeed != null) {
-            DataQueueAdd(paceData, info.currentSpeed);
-            DataQueueAdd(paceDataOneMinute, info.currentSpeed);
+        	if (lastTime != info.timerTime) {
+        		lastTime = info.timerTime;
+            	DataQueueAdd(paceData, info.currentSpeed);
+            }
         } else {
+        	//System.println("-->compute: resetting pace data");
             DataQueueReset(paceData);
-            DataQueueReset(paceDataOneMinute);
+            paceDataLongPos = 0;
+            paceDataLongLastTime = -30000;
+            paceDataLongAverage = new [paceDataLongAverageLen];
+        }
+        
+        // If we have more than 30s of data
+        if((info.timerTime != null) && (info.elapsedDistance != null)) {
+           if((info.timerTime - paceDataLongLastTime) >= 30000) {
+             //System.println("Adding; " + [ info.elapsedDistance, info.timerTime ] + " " + paceDataLongPos + "/" + paceDataLongAverageLen + "/" + paceDataLongAverage.size());
+             if(paceDataLongPos >= paceDataLongAverage.size()) {
+             	paceDataLongPos = paceDataLongAverage.size()-1;
+             	for(var i = 0; i < paceDataLongAverage.size()-1; i++) {
+             		paceDataLongAverage[i] = paceDataLongAverage[i+1]; 
+             	}
+             }
+        	 paceDataLongAverage[paceDataLongPos] = [ info.elapsedDistance, info.timerTime ];
+        	 paceDataLongLastTime = info.timerTime;             
+        	 paceDataLongPos += 1;
+          }
         }
         
         avgSpeed = info.averageSpeed != null ? info.averageSpeed : 0;
-        elapsedTime = info.elapsedTime != null ? info.elapsedTime : 0;
+        elapsedTime = info.timerTime != null ? info.timerTime : 0;
         hr = info.currentHeartRate != null ? info.currentHeartRate : 0;
         distance = info.elapsedDistance != null ? info.elapsedDistance : 0;
         gpsSignal = info.currentLocationAccuracy;
@@ -105,9 +136,16 @@ class RunnersView extends Ui.DataField {
 		maxCadence = info.maxCadence != null ? info.maxCadence : 0;
 		averageCadence = info.averageCadence != null ? info.averageCadence : 0;
 		currentCadence = info.currentCadence != null ? info.currentCadence : 0;
+		
+		//if (info.timerTime == 0) {
+		//    DataQueueReset(paceData);
+        //    DataQueueReset(paceDataOneMinute);
+		//}
+		
     }
     
     function onLayout(dc) {
+    	//System.println("-->onLayout: " + System.getSystemStats().usedMemory);
 		if (doneLayout == 1) {
 			return;
 		}
@@ -118,6 +156,7 @@ class RunnersView extends Ui.DataField {
     }
     
     function onShow() {
+    	//System.println("-->onShow");
     	doUpdates = true;
     	return true;
     }
@@ -127,6 +166,8 @@ class RunnersView extends Ui.DataField {
     }
     
     function onUpdate(dc) {
+    	//System.println("-->onUpdate");
+    	
     	if(doUpdates == false) {
     		return;
     	}
@@ -152,11 +193,11 @@ class RunnersView extends Ui.DataField {
         }
         is24Hour = System.getDeviceSettings().is24Hour;
         
-        paceStr = Ui.loadResource(Rez.Strings.pace);
-        avgPaceStr = Ui.loadResource(Rez.Strings.avgpace);
-        hrStr = Ui.loadResource(Rez.Strings.hr);
-        distanceStr = Ui.loadResource(Rez.Strings.distance);
-        durationStr = Ui.loadResource(Rez.Strings.duration);
+        paceStr = "PACE"; //Ui.loadResource(Rez.Strings.pace);
+        avgPaceStr = "AVG PACE"; //Ui.loadResource(Rez.Strings.avgpace);
+        hrStr = "HR"; //Ui.loadResource(Rez.Strings.hr);
+        distanceStr = "DIST"; // Ui.loadResource(Rez.Strings.distance);
+        durationStr = "DURATION"; //Ui.loadResource(Rez.Strings.duration);
     }
     
     function setColors() {
@@ -173,6 +214,7 @@ class RunnersView extends Ui.DataField {
     }
         
     function drawValues(dc) {
+    	//System.println("-->drawValues");
         //time
         var clockTime = System.getClockTime();
         var time, ampm;
@@ -191,14 +233,24 @@ class RunnersView extends Ui.DataField {
         
         //pace
 		var paceColor = textColor;
-		var oneMinuteAvgSpeed = computeAverageSpeed(paceDataOneMinute);
+		var longAvgSpeed = 0;
+		if(paceDataLongPos > 0) {
+			var longAvgData = paceDataLongAverage[0];
+			//System.println(paceDataLongPos + " " + distance +"/"+ longAvgData[0] +"/"+ elapsedTime +"/"+ longAvgData[1]);
+			if(longAvgData != null) { 
+				if ((elapsedTime - longAvgData[1]) > 1000) {
+					longAvgSpeed = (distance-longAvgData[0])/((elapsedTime - longAvgData[1])/1000);
+				}
+			}
+		}
+		
 		var shortAvgSpeed = computeAverageSpeed(paceData);
 		
-		if (shortAvgSpeed < oneMinuteAvgSpeed) {
+		if (shortAvgSpeed < longAvgSpeed) {
 			paceColor = paceSlowColor;
 		} 
         dc.setColor(paceColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(50, 70, VALUE_FONT, getMinutesPerKmOrMile(shortAvgSpeed), CENTER);
+        dc.drawText(46, 70, VALUE_FONT, getMinutesPerKmOrMile(shortAvgSpeed), CENTER);
         
         //hr
         //dc.setColor(hrColor, Graphics.COLOR_TRANSPARENT);
@@ -225,18 +277,18 @@ class RunnersView extends Ui.DataField {
            
         // altitude
         dc.setColor(Graphics.COLOR_DK_GREEN, Graphics.COLOR_TRANSPARENT);
-        //dc.drawText(112, 130, VALUE_FONT, (mOrFeet*altitude).format("%2.1f"), CENTER);   
-		var ascent = (mOrFeet*altitude); 
-		if (ascent > 99.9) {
-        	dc.drawText(109, 130, VALUE_FONT, ascent.format("%d"), CENTER);
-       	} else {
-       		dc.drawText(109, 130, VALUE_FONT, ascent.format("%2.1f"), CENTER);
-       	}
-        dc.drawText(109,  70, VALUE_FONT, getMinutesPerKmOrMile(oneMinuteAvgSpeed), CENTER);
-                
+
+        var alt = mOrFeet*altitude;
+        var str_alt = alt > 99.9 ? alt.format("%d") : alt.format("%2.1f");
+		dc.drawText(112, 130, VALUE_FONT, str_alt, CENTER);   
+        
+        // two minute pace
+		dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
+		dc.drawText(109, 70, VALUE_FONT, getMinutesPerKmOrMile(longAvgSpeed), CENTER);
+        
         //apace
 		paceColor = textColor;
-		if (oneMinuteAvgSpeed < avgSpeed) {
+		if (longAvgSpeed < avgSpeed) {
 			paceColor = paceSlowColor;
 		}
         dc.setColor(paceColor, Graphics.COLOR_TRANSPARENT);
@@ -255,7 +307,7 @@ class RunnersView extends Ui.DataField {
             distStr = ZERO_DISTANCE;
         }
         dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(173 , 70, VALUE_FONT, distStr, CENTER);
+        dc.drawText(178 , 70, VALUE_FONT, distStr, CENTER);
         
         //duration
         var duration;
@@ -277,7 +329,7 @@ class RunnersView extends Ui.DataField {
         } else {
             duration = ZERO_TIME;
         } 
-        dc.drawText(173, 130, VALUE_FONT, duration, CENTER);
+        dc.drawText(178, 130, VALUE_FONT, duration, CENTER);
         
         //signs background
         dc.setColor(inverseBackgroundColor, inverseBackgroundColor);
@@ -302,6 +354,7 @@ class RunnersView extends Ui.DataField {
         
         // headers:
         dc.setColor(headerColor, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(50, 43, HEADER_FONT, paceStr, CENTER);
         dc.drawText(57, 160, HEADER_FONT, avgPaceStr, CENTER);
         dc.drawText(109, 43, HEADER_FONT, "APACE", CENTER);
         //dc.drawText(109, 38, HEADER_FONT, hrStr, CENTER); 
@@ -311,6 +364,11 @@ class RunnersView extends Ui.DataField {
         //grid
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawLine(0, 104, dc.getWidth(), 104);
+        
+        //RKO Arc
+//        var width = dc.getWidth();
+//        var height = dc.getHeight();
+//        drawZoneBarsArcs(dc, (height/2)+1, width/2, height/2, hr); //radius, center x, center y
     }
     
     function drawHRZone(dc, hr, hrBot, hrTop, color) {
@@ -418,6 +476,7 @@ class RunnersView extends Ui.DataField {
     }
     
     function getMinutesPerKmOrMile(speedMetersPerSecond) {
+    	//System.println("-->getMinutesPerKmOrMile");
         if (speedMetersPerSecond != null && speedMetersPerSecond > 0.2) {
             var metersPerMinute = speedMetersPerSecond * 60.0;
             var minutesPerKmOrMilesDecimal = kmOrMileInMeters / metersPerMinute;
@@ -429,11 +488,11 @@ class RunnersView extends Ui.DataField {
     }
     
     function updateSettings() {
-		paceAvgLen = Application.getApp().getProperty("paceAveraging");
-		paceData = new DataQueue(paceAvgLen);
+		//paceAvgLen = Application.getApp().getProperty("paceAveraging");
+		//paceData = new DataQueue(paceAvgLen);
 
-		paceAvgLongLen = Application.getApp().getProperty("paceAveragingLong");
-    	paceDateOneMinute = new DataQueue(paceAvgLongLen);   	
+		//paceAvgLongLen = Application.getApp().getProperty("paceAveragingLong");
+    	//paceDateOneMinute = new DataQueue(paceAvgLongLen);   	
     }
      
     

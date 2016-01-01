@@ -20,17 +20,14 @@
         </iq:products>
 
         <iq:permissions>
-        	<!-- <iq:uses-permission id="UserProfile"/> -->
+        	<iq:uses-permission id="UserProfile"/>
         </iq:permissions>
 
         <iq:languages>
-            <iq:language>deu</iq:language>
-            <iq:language>eng</iq:language>
-            <iq:language>dut</iq:language>
+            <!-- <iq:language>deu</iq:language> -->
+            <!-- <iq:language>dut</iq:language> -->
+            <!-- <iq:language>eng</iq:language> -->
         </iq:languages>
 
     </iq:application>
 </iq:manifest>
-            <!-- <iq:language>deu</iq:language> -->
-            <!-- <iq:language>dut</iq:language> -->
-            <!-- <iq:language>eng</iq:language> -->
